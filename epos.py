@@ -8,24 +8,16 @@ import requests
 class EposClient:
     __cabinetUrl__ = 'https://cabinet.permkrai.ru/'
     __eposUrl__ = 'https://school.permkrai.ru/'
+    __rsaa_form_url__ = ''
 
     def __init__(self):
         self.__session__ = requests.Session()
 
     def __setheaders__(self):
-        # pycharm's weird o_O?
-        self.__session__.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, ' \
-                                                 'like Gecko) Chrome/98.0.4758.10 Safari/537.36 '
-        # imitate a Chrome browser as much as possible
-        self.__session__.headers['sec-ch-ua'] = '" Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98"'
-        self.__session__.headers['sec-ch-ua-mobile'] = '?0'
-        self.__session__.headers['sec-ch-ua-platform'] = '"Windows"'
-        self.__session__.headers['pragma'] = 'no-cache'
-        self.__session__.headers['accept-language'] = 'en-US,en;q=0.9'
-        self.__session__.headers['cache-control'] = 'no-cache'
+        self.__session__.headers[
+            'user-agent'] = 'EposPythonLibrary/1.0 (https://github.com/nkrapivin/epos.py; alienoom@yandex.ru)'
         self.__session__.headers['accept'] = 'application/json, text/plain, text/html, */*'
-        self.__session__.headers['upgrade-insecure-requests'] = '1'
-        self.__session__.headers['x-requested-with'] = 'XMLHttpRequest'
+        # Not safe but works
 
     def __refreshcsrf__(self):
         self.__setheaders__()
@@ -91,14 +83,39 @@ class EposClient:
         # the IB Whiteboard client seems to save this auth-token value into some storage, might be useful?
         return [r.status_code < 400, self.__session__.headers['auth-token']]
 
+    # Get OpenID cookies and RSAA www-form action for auth
+    def get_open_id_token(self):
+        self.__setheaders__()
+
+        kc = self.__session__.get(url=self.__eposUrl__ + 'authenticate/oauth?mode=rsaa')
+
+        html = kc.text
+        startpos = html.find('action="') + len('action="')
+        endpos = html.find('" method')
+        self.__rsaa_form_url__ = html[startpos:endpos].replace('&amp;', '&')
+
+    def login_rsaa(self, login: str, passwd: str):
+        url = self.__rsaa_form_url__
+        payload = {
+            'username': login,
+            'password': passwd
+        }
+
+        r = self.__session__.post(url, data=payload)
+
+        self.auth_epos("rsaa")
+
+        return r.status_code < 400
+
     def auth_epos_student(self):
         return self.auth_epos('rsaags')
 
     def auth_epos_parent(self):
         return self.auth_epos('rsaag')
 
-    def auth_epos_teacher(self):
-        return self.auth_epos('rsaa')
+    def auth_epos_teacher(self, login: str, passwd: str):
+        self.get_open_id_token()
+        return self.login_rsaa(login, passwd)
 
     def epos_logout(self):
         r = self.__session__.delete(
