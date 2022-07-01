@@ -11,8 +11,6 @@ def testcase_main():
     login = input("Login (E-Mail): ")
     password = input("Password: ")
 
-    loginok = e.login_password(login, password)
-    agreement = e.check_agreement()
     eposok = e.auth_epos_student()
     epossessions = e.epos_get_sessions()
     myuserid = epossessions['id']
@@ -24,8 +22,8 @@ def testcase_main():
     # ?????????????????
     eposusers = e.epos_get_users([myuserid, myuserid], myprofid)
     # print results
-    print('loginOk=', loginok)
-    print('agreement=', agreement)
+    print(f'{e.login_password(login, password)=}')
+    print(f'{e.check_agreement()=}')
     print('eposOk=', eposok)
     print('eposSessions=', epossessions)
     print('eposAcademYears=', eposacadem)
@@ -43,8 +41,6 @@ def testcase_main():
     login = input("Login (E-Mail): ")
     password = input("Password: ")
 
-    eposok_teacker = e2.auth_epos_teacher(login, password)
-    epossessions = e2.epos_get_sessions()
     myuserid = epossessions['id']
     myprofid = epossessions['profiles'][0]['id']
     eposacadem = e2.epos_get_academic_years(myprofid)
@@ -52,8 +48,8 @@ def testcase_main():
     eposnotifs = e2.epos_get_notifications(myprofid)
     eposusers = e2.epos_get_users([myuserid, myuserid], myprofid)
     # Print results
-    print('eposTeacherOK=', eposok_teacker)
-    print('eposSessions=', epossessions)
+    print(f'{e2.auth_epos_teacher(login, password)=}')
+    print(f'{e2.epos_get_sessions()=}')
     print('eposAcademYears=', eposacadem)
     print('eposMessages=', eposmessages)
     print('eposUserData=', eposusers)
